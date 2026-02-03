@@ -25,7 +25,8 @@ public class WebCam : MonoBehaviour
     
     [Header("Controlli")]
     [SerializeField] private Slider intensitySlider;
-    [SerializeField] private Slider sizeSlider; // <--- NUOVO SLIDER
+    [SerializeField] private Slider sizeSlider; 
+    [SerializeField] private Toggle colorToggle; // <--- NUOVO TOGGLE
 
     void Start()
     {
@@ -38,10 +39,18 @@ public class WebCam : MonoBehaviour
                 intensitySlider.onValueChanged.AddListener(UpdateIntensity);
             }
 
-            // Setup Slider Grandezza (NUOVO)
+            // Setup Slider Grandezza
             if(sizeSlider != null) {
                 sizeSlider.value = grainLayer.size.value;
                 sizeSlider.onValueChanged.AddListener(UpdateSize);
+            }
+
+            // Setup Toggle Colore (NUOVO)
+            if(colorToggle != null) {
+                // Leggiamo lo stato attuale (vero o falso)
+                colorToggle.isOn = grainLayer.colored.value;
+                // Aggiungiamo l'ascoltatore
+                colorToggle.onValueChanged.AddListener(UpdateColor);
             }
         }
 
@@ -51,7 +60,7 @@ public class WebCam : MonoBehaviour
         if(startButton != null) startButton.SetActive(true);
     }
 
-    // --- FUNZIONI UI (Pubbliche) ---
+    // --- FUNZIONI UI ---
 
     public void OnStartPressed()
     {
@@ -66,15 +75,22 @@ public class WebCam : MonoBehaviour
         StartStopCam_Clicked();
     }
 
+    // Funzione Intensità
     public void UpdateIntensity(float value)
     {
         if(grainLayer != null) grainLayer.intensity.value = value;
     }
 
-    // NUOVA FUNZIONE PER LA GRANDEZZA
+    // Funzione Grandezza
     public void UpdateSize(float value)
     {
         if(grainLayer != null) grainLayer.size.value = value;
+    }
+
+    // NUOVA FUNZIONE COLORE
+    public void UpdateColor(bool isColored)
+    {
+        if(grainLayer != null) grainLayer.colored.value = isColored;
     }
 
     public void OpenSettings()
