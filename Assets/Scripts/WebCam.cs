@@ -13,7 +13,7 @@ public class WebCam : MonoBehaviour
     private Grain grainLayer;
     private ChromaticAberration ghostingLayer; 
     private Bloom bloomLayer;
-    private ColorGrading colorGradingLayer; // <--- NUOVO LAYER (CONTRASTO)
+    private ColorGrading colorGradingLayer;
 
     [Header("Camera Setup")]
     [SerializeField] private RawImage display;
@@ -33,14 +33,18 @@ public class WebCam : MonoBehaviour
     [SerializeField] private Slider flickerSlider;
     [SerializeField] private Slider trailSlider; 
     [SerializeField] private Slider haloSlider; 
-    [SerializeField] private Slider contrastSlider; // <--- NUOVO SLIDER
+    [SerializeField] private Slider contrastSlider;
+
+    [Header("Entoptic Phenomena")]
+    [SerializeField] private GameObject bfepObject; // Solo BFEP
+    [SerializeField] private Toggle bfepToggle;     // Solo BFEP
 
     private float nextFlickerTime;
     private bool isFlickerOn = true;
 
     void Start()
     {
-        // 1. CONFIGURAZIONE INIZIALE
+        // 1. CONFIGURAZIONE INIZIALE SLIDER & EFFETTI
         if(mainVolume != null)
         {
             // GRAIN
@@ -73,22 +77,28 @@ public class WebCam : MonoBehaviour
                 }
             }
 
-            // COLOR GRADING (Contrasto) - NUOVO
+            // COLOR GRADING (Contrasto)
             if(mainVolume.profile.TryGetSettings(out colorGradingLayer))
             {
                 if(contrastSlider != null)
                 {
-                    contrastSlider.minValue = -100f; // Sbiadito
-                    contrastSlider.maxValue = 100f;  // Forte
+                    contrastSlider.minValue = -100f; 
+                    contrastSlider.maxValue = 100f;  
                     contrastSlider.onValueChanged.AddListener(UpdateContrast);
                 }
             }
         }
 
-        // 2. CARICAMENTO PROFILO
+        // 2. CONFIGURAZIONE BFEP (Fenomeni Entoptici)
+        if(bfepToggle != null) bfepToggle.onValueChanged.AddListener(UpdateBFEP);
+        
+        // Stato iniziale: spento (verrà sovrascritto dal LoadProfile se c'è un salvataggio)
+        if(bfepObject != null) bfepObject.SetActive(false);
+
+        // 3. CARICAMENTO PROFILO (Spostato alla fine per attivare i listener)
         LoadProfile();
 
-        // 3. UI
+        // 4. UI INIZIALE
         if(settingsPanel != null) settingsPanel.SetActive(false);
         if(openSettingsButton != null) openSettingsButton.SetActive(false); 
         if(startButton != null) startButton.SetActive(true);
@@ -96,14 +106,14 @@ public class WebCam : MonoBehaviour
 
     void Update()
     {
-        // Gestione Sfarfallio
+        // Gestione Sfarfallio (Pulsazione)
         if (grainLayer == null || flickerSlider == null) return;
         if (flickerSlider.value >= 59f) {
             grainLayer.intensity.value = intensitySlider.value;
         } else if (Time.time >= nextFlickerTime) {
             isFlickerOn = !isFlickerOn;
             float valoreAlto = intensitySlider.value;
-            float valoreBasso = intensitySlider.value * 0.4f; // 40% della potenza (non 0)
+            float valoreBasso = intensitySlider.value * 0.4f; 
 
             grainLayer.intensity.value = isFlickerOn ? valoreAlto : valoreBasso;
             
@@ -111,7 +121,7 @@ public class WebCam : MonoBehaviour
         }
     }
 
-    // --- FUNZIONI DI SALVATAGGIO ---
+    // --- FUNZIONI DI SALVATAGGIO (Aggiornate per BFEP) ---
 
     public void SaveProfile()
     {
@@ -121,7 +131,13 @@ public class WebCam : MonoBehaviour
         PlayerPrefs.SetFloat("VS_Flicker", flickerSlider.value);
         PlayerPrefs.SetFloat("VS_Trail", trailSlider.value);
         PlayerPrefs.SetFloat("VS_Halo", haloSlider.value);
-        PlayerPrefs.SetFloat("VS_Contrast", contrastSlider.value); // <--- SALVIAMO IL CONTRASTO
+        PlayerPrefs.SetFloat("VS_Contrast", contrastSlider.value);
+        
+        // NUOVO: Salviamo lo stato del BFEP (1 = Acceso, 0 = Spento)
+        if (bfepToggle != null)
+        {
+            PlayerPrefs.SetInt("VS_BFEP", bfepToggle.isOn ? 1 : 0);
+        }
 
         PlayerPrefs.Save();
         Debug.Log("Profilo Salvato!");
@@ -138,28 +154,30 @@ public class WebCam : MonoBehaviour
             trailSlider.value = PlayerPrefs.GetFloat("VS_Trail");
             haloSlider.value = PlayerPrefs.GetFloat("VS_Halo");
             
-            // Carichiamo il contrasto (con controllo sicurezza se è vecchio salvataggio)
             if(PlayerPrefs.HasKey("VS_Contrast")) 
                 contrastSlider.value = PlayerPrefs.GetFloat("VS_Contrast");
-            else
-                contrastSlider.value = 0f;
+            
+            // NUOVO: Carichiamo lo stato del BFEP
+            if (PlayerPrefs.HasKey("VS_BFEP") && bfepToggle != null)
+            {
+                // Impostando .isOn, scatterà in automatico il listener che accende l'oggetto
+                bfepToggle.isOn = PlayerPrefs.GetInt("VS_BFEP") == 1;
+            }
 
             Debug.Log("Profilo Caricato!");
         }
     }
 
     // --- AGGIORNAMENTO EFFETTI ---
-    public void UpdateIntensity(float value) { /* Update gestisce questo */ }
+    public void UpdateIntensity(float value) { /* Gestito in Update */ }
     public void UpdateSize(float value) { if(grainLayer != null) grainLayer.size.value = value; }
     public void UpdateColor(bool isColored) { if(grainLayer != null) grainLayer.colored.value = isColored; }
     public void UpdateTrail(float value) { if(ghostingLayer != null) ghostingLayer.intensity.value = value; }
     public void UpdateHalo(float value) { if(bloomLayer != null) bloomLayer.intensity.value = value; }
-    
-    // NUOVA FUNZIONE CONTRASTO
-    public void UpdateContrast(float value) 
-    { 
-        if(colorGradingLayer != null) colorGradingLayer.contrast.value = value; 
-    }
+    public void UpdateContrast(float value) { if(colorGradingLayer != null) colorGradingLayer.contrast.value = value; }
+
+    // Funzione BFEP (Floaters rimossi)
+    public void UpdateBFEP(bool isActive) { if(bfepObject != null) bfepObject.SetActive(isActive); }
 
     // --- SISTEMA ---
     public void OnStartPressed()
