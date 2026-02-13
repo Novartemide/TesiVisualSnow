@@ -24,7 +24,7 @@ public class WebCam : MonoBehaviour
     [Header("UI Settings")]
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private GameObject openSettingsButton;
-    [SerializeField] private GameObject startButton;
+    // Rimosso: startButton
     
     [Header("Controlli")]
     [SerializeField] private Slider intensitySlider;
@@ -36,8 +36,8 @@ public class WebCam : MonoBehaviour
     [SerializeField] private Slider contrastSlider;
 
     [Header("Entoptic Phenomena")]
-    [SerializeField] private GameObject bfepObject; // Solo BFEP
-    [SerializeField] private Toggle bfepToggle;     // Solo BFEP
+    [SerializeField] private GameObject bfepObject; 
+    [SerializeField] private Toggle bfepToggle;     
 
     private float nextFlickerTime;
     private bool isFlickerOn = true;
@@ -47,7 +47,6 @@ public class WebCam : MonoBehaviour
         // 1. CONFIGURAZIONE INIZIALE SLIDER & EFFETTI
         if(mainVolume != null)
         {
-            // GRAIN
             if(mainVolume.profile.TryGetSettings(out grainLayer))
             {
                 if(intensitySlider != null) intensitySlider.onValueChanged.AddListener(UpdateIntensity);
@@ -55,7 +54,6 @@ public class WebCam : MonoBehaviour
                 if(colorToggle != null) colorToggle.onValueChanged.AddListener(UpdateColor);
             }
 
-            // GHOSTING (Scie)
             if(mainVolume.profile.TryGetSettings(out ghostingLayer))
             {
                 if(trailSlider != null)
@@ -66,7 +64,6 @@ public class WebCam : MonoBehaviour
                 }
             }
 
-            // BLOOM (Aloni)
             if(mainVolume.profile.TryGetSettings(out bloomLayer))
             {
                 if(haloSlider != null)
@@ -77,7 +74,6 @@ public class WebCam : MonoBehaviour
                 }
             }
 
-            // COLOR GRADING (Contrasto)
             if(mainVolume.profile.TryGetSettings(out colorGradingLayer))
             {
                 if(contrastSlider != null)
@@ -89,19 +85,19 @@ public class WebCam : MonoBehaviour
             }
         }
 
-        // 2. CONFIGURAZIONE BFEP (Fenomeni Entoptici)
+        // 2. CONFIGURAZIONE BFEP 
         if(bfepToggle != null) bfepToggle.onValueChanged.AddListener(UpdateBFEP);
-        
-        // Stato iniziale: spento (verrà sovrascritto dal LoadProfile se c'è un salvataggio)
         if(bfepObject != null) bfepObject.SetActive(false);
 
-        // 3. CARICAMENTO PROFILO (Spostato alla fine per attivare i listener)
+        // 3. CARICAMENTO PROFILO 
         LoadProfile();
 
-        // 4. UI INIZIALE
+        // 4. UI INIZIALE (Pannello chiuso, pulsante impostazioni visibile)
         if(settingsPanel != null) settingsPanel.SetActive(false);
-        if(openSettingsButton != null) openSettingsButton.SetActive(false); 
-        if(startButton != null) startButton.SetActive(true);
+        if(openSettingsButton != null) openSettingsButton.SetActive(true); 
+
+        // 5. AVVIO AUTOMATICO FOTOCAMERA E PERMESSI
+        StartCoroutine(InitCameraRoutine());
     }
 
     void Update()
@@ -121,8 +117,26 @@ public class WebCam : MonoBehaviour
         }
     }
 
-    // --- FUNZIONI DI SALVATAGGIO (Aggiornate per BFEP) ---
+    // --- LOGICA AVVIO AUTOMATICO ---
+    private IEnumerator InitCameraRoutine()
+    {
+        #if UNITY_ANDROID
+        // Controlla se abbiamo i permessi
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+        {
+            // Richiede i permessi
+            Permission.RequestUserPermission(Permission.Camera);
+            
+            // Aspetta finché l'utente non clicca su "Consenti" nel popup di Android
+            yield return new WaitUntil(() => Permission.HasUserAuthorizedPermission(Permission.Camera));
+        }
+        #endif
 
+        // Avvia la fotocamera solo dopo aver ottenuto i permessi (o se li aveva già)
+        StartStopCam_Clicked();
+    }
+
+    // --- FUNZIONI DI SALVATAGGIO ---
     public void SaveProfile()
     {
         PlayerPrefs.SetFloat("VS_Intensity", intensitySlider.value);
@@ -133,14 +147,9 @@ public class WebCam : MonoBehaviour
         PlayerPrefs.SetFloat("VS_Halo", haloSlider.value);
         PlayerPrefs.SetFloat("VS_Contrast", contrastSlider.value);
         
-        // NUOVO: Salviamo lo stato del BFEP (1 = Acceso, 0 = Spento)
-        if (bfepToggle != null)
-        {
-            PlayerPrefs.SetInt("VS_BFEP", bfepToggle.isOn ? 1 : 0);
-        }
+        if (bfepToggle != null) PlayerPrefs.SetInt("VS_BFEP", bfepToggle.isOn ? 1 : 0);
 
         PlayerPrefs.Save();
-        Debug.Log("Profilo Salvato!");
     }
 
     public void LoadProfile()
@@ -157,14 +166,8 @@ public class WebCam : MonoBehaviour
             if(PlayerPrefs.HasKey("VS_Contrast")) 
                 contrastSlider.value = PlayerPrefs.GetFloat("VS_Contrast");
             
-            // NUOVO: Carichiamo lo stato del BFEP
             if (PlayerPrefs.HasKey("VS_BFEP") && bfepToggle != null)
-            {
-                // Impostando .isOn, scatterà in automatico il listener che accende l'oggetto
                 bfepToggle.isOn = PlayerPrefs.GetInt("VS_BFEP") == 1;
-            }
-
-            Debug.Log("Profilo Caricato!");
         }
     }
 
@@ -175,22 +178,9 @@ public class WebCam : MonoBehaviour
     public void UpdateTrail(float value) { if(ghostingLayer != null) ghostingLayer.intensity.value = value; }
     public void UpdateHalo(float value) { if(bloomLayer != null) bloomLayer.intensity.value = value; }
     public void UpdateContrast(float value) { if(colorGradingLayer != null) colorGradingLayer.contrast.value = value; }
-
-    // Funzione BFEP (Floaters rimossi)
     public void UpdateBFEP(bool isActive) { if(bfepObject != null) bfepObject.SetActive(isActive); }
 
     // --- SISTEMA ---
-    public void OnStartPressed()
-    {
-        #if UNITY_ANDROID
-            if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
-                Permission.RequestUserPermission(Permission.Camera);
-        #endif
-        if(startButton != null) startButton.SetActive(false);
-        if(openSettingsButton != null) openSettingsButton.SetActive(true);
-        StartStopCam_Clicked();
-    }
-    
     public void OpenSettings() { settingsPanel.SetActive(true); openSettingsButton.SetActive(false); }
     public void CloseSettings() { settingsPanel.SetActive(false); openSettingsButton.SetActive(true); }
 
