@@ -1,0 +1,190 @@
+/* === ROOT === */
+#root {
+    width: 100%;
+    height: 100%;
+    /* TRASPARENTE: il RawImage della fotocamera sta su un Canvas separato
+       sotto il UI Toolkit. Se mettiamo un colore qui, lo copriamo. */
+    background-color: rgba(0, 0, 0, 0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* === BOTTONI SUPERIORI === */
+#openSettings, #switchCamera {
+    position: absolute;
+    top: 5%;
+    padding: 14px 28px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 30px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 20px;
+    -unity-font-style: bold;
+    transition-duration: 0.2s;
+}
+
+#openSettings:hover, #switchCamera:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    scale: 1.05 1.05;
+}
+
+#openSettings { left: 5%; }
+#switchCamera { right: 5%; }
+
+/* === PANNELLO SETTINGS === */
+#settings {
+    width: 90%;
+    max-width: 560px;
+    padding: 24px 20px;
+    background-color: rgba(28, 28, 30, 0.95);
+    border-radius: 24px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.1);
+    flex-direction: column;
+    align-items: stretch;
+    align-self: center;
+}
+
+/* =============================================
+   SLIDER: label sopra + slider sotto
+   ============================================= */
+
+/* Contenitore di ogni coppia Label+Slider */
+.slider-row {
+    flex-direction: column;   /* impila verticalmente */
+    align-items: stretch;
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+/* Il testo del label SOPRA lo slider */
+.slider-label {
+    color: white;
+    font-size: 22px;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+    margin-left: 2px;
+}
+
+/* Lo slider stesso (nessun label interno) */
+.slider-control {
+    width: 100%;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Nasconde il label interno dello Slider Unity (è vuoto, ma per sicurezza) */
+.slider-control .unity-slider__label {
+    display: none;
+}
+
+/* Barra */
+.unity-slider__tracker {
+    height: 10px;
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 5px;
+    margin-top: -5px;
+}
+
+/* Fill colorato */
+.unity-slider__tracker-fill {
+    background-color: rgb(100, 150, 255);
+    border-radius: 5px;
+}
+
+/* DRAGGER — grande per il tocco */
+.unity-slider__dragger {
+    width: 40px;
+    height: 40px;
+    background-color: white;
+    border-width: 0;
+    margin-top: -20px;
+    border-radius: 50%;
+}
+
+.unity-slider__dragger:hover {
+    scale: 1.15 1.15;
+    background-color: rgb(210, 225, 255);
+    border-radius: 50%;
+}
+
+/* =============================================
+   TOGGLE — pill più stretto, senza spazio inutile
+   ============================================= */
+Toggle {
+    margin-top: 12px;
+    margin-bottom: 6px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.unity-toggle__label {
+    color: white;
+    font-size: 22px;
+    -unity-font-style: bold;
+    flex-grow: 1;
+    margin-left: 0;
+}
+
+.unity-toggle__input {
+    width: 54px;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.18);
+    border-radius: 15px;
+    border-width: 0;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.unity-toggle__input:checked {
+    background-color: rgb(100, 150, 255);
+}
+
+/* Pallino */
+.unity-toggle__checkmark {
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border-radius: 50%;
+    margin: 3px;
+    transition-duration: 0.2s;
+    background-image: none;
+    translate: -60px 0;
+}
+
+.unity-toggle__input:checked .unity-toggle__checkmark {
+    translate: 60px 0;
+}
+
+/* =============================================
+   BOTTONI PANNELLO
+   ============================================= */
+#closeSettings, #save {
+    margin-top: 14px;
+    padding: 18px;
+    border-radius: 18px;
+    border-width: 0;
+    color: white;
+    font-size: 18px;
+    -unity-font-style: bold;
+    width: 100%;
+}
+
+#closeSettings {
+    background-color: rgba(255, 255, 255, 0.12);
+    margin-bottom: 6px;
+}
+
+#save {
+    background-color: rgb(100, 150, 255);
+}
+
+#save:hover, #closeSettings:hover {
+    scale: 1.02 1.02;
+    transition-duration: 0.15s;
+}
